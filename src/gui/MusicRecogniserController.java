@@ -3,7 +3,6 @@ package gui;
 import acrConfiguration.ACRConfiguration;
 import javafx.scene.control.*;
 import javafx.stage.*;
-
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -12,10 +11,8 @@ import com.acrcloud.utils.*;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
-import org.jaudiotagger.tag.id3.ID3v24Tag;
 import org.json.*;
 import org.jaudiotagger.audio.mp3.MP3File;
-import org.jaudiotagger.tag.id3.ID3v1Tag;
 import org.jaudiotagger.audio.exceptions.*;
 import org.jaudiotagger.tag.*;
 
@@ -111,11 +108,15 @@ public class MusicRecogniserController {
 
             music = new Music(artist, title, album, genre);
 
+            if (!areFeaturedArtistsInMusicTitle(music)) {
+                music.setTitle(music.getTitle() + " ft. " + getFeaturedArtists(musicDetails));
+            }
+
             String fileExtension = ".mp3";
             if (musicFileInfo.getMusicFile().getPath().contains(".")) {
                 fileExtension = musicFileInfo.getMusicFile().getPath().substring(musicFileInfo.getMusicFile().getPath().lastIndexOf("."));
             }
-            String newMusicFileName = artist + " - " + title + fileExtension;
+            String newMusicFileName = music.getArtist() + " - " + music.getTitle() + fileExtension;
             newFilePath += "\\" + newMusicFileName;
             musicFileInfo.setNewMusicFilePath(newFilePath);
 
@@ -155,6 +156,29 @@ public class MusicRecogniserController {
 
         return genre;
     }
+
+    private static boolean areFeaturedArtistsInMusicTitle(Music music) {
+        if (music.getTitle().contains(" ft") || music.getTitle().contains(" feat")) {
+            return true;
+        }
+
+        return false;
+    }   //  areFeaturedArtistsInMusicTitle()
+
+    private static String getFeaturedArtists(JSONObject musicDetails) {
+        String featuredArtists = "";
+        JSONArray artistJSONArray = musicDetails.getJSONArray("artists");
+
+        for (int i = 1; i < artistJSONArray.length(); i++) {
+            if (!featuredArtists.isEmpty()) {
+                featuredArtists += ", ";
+            }   //  end of if
+
+            featuredArtists += artistJSONArray.getJSONObject(i).getString("name");
+        }   //  end of for
+
+        return featuredArtists;
+    }   //  end of addFeaturedArtistsToMusicTitle()
 
     private static void setMP3MusicTag(MusicFileInformation musicFileInfo, Music music) {
         try {
