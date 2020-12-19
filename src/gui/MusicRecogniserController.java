@@ -48,6 +48,8 @@ public class MusicRecogniserController {
 
         ACRCloudRecognizer audioRecogniser = new ACRCloudRecognizer(configuration);
 
+        displayRenamingFilesAlert();
+
         if (musicFilesInformation != null) {
             for (MusicFileInformation musicFileInfo : musicFilesInformation) {
                 createRecognisedMusic(audioRecogniser, musicFileInfo, newFilePath, resultDisplay);
@@ -55,6 +57,14 @@ public class MusicRecogniserController {
         }
 
     }   //  end of renameMusicFiles()
+
+    private static void displayRenamingFilesAlert() {
+        Alert renameMusicAlert = new Alert(Alert.AlertType.INFORMATION);
+        renameMusicAlert.setTitle("Preparing To Rename Files");
+        renameMusicAlert.setHeaderText("");
+        renameMusicAlert.setContentText("Proceed to rename music files");
+        renameMusicAlert.showAndWait();
+    }
 
     private static void setupConfiguration(Map<String, Object> config) {
         config.put("host", ACRConfiguration.HOST);
@@ -73,73 +83,83 @@ public class MusicRecogniserController {
 
         if (!recognisedMusicJson.contains("Http Error")) {
             JSONObject musicJsonObject = new JSONObject(recognisedMusicJson);
-            JSONObject musicDetails = musicJsonObject.getJSONObject("metadata").getJSONArray("music").getJSONObject(0);
-
-            Music music;
-
-            String title = "";
-            String artist = "";
-            String album = "";
-            String genre = "";
-
+            JSONObject musicDetails = null;
             try {
-                title = musicDetails.getString("title");
+                musicDetails = musicJsonObject.getJSONObject("metadata").getJSONArray("music").getJSONObject(0);
+                Music music;
+
+                String title = "";
+                String artist = "";
+                String album = "";
+                String genre = "";
+
+                try {
+                    title = musicDetails.getString("title");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    artist = musicDetails.getJSONArray("artists").getJSONObject(0).getString("name");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    album = musicDetails.getJSONObject("album").getString("name");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    genre = getGenreFromJSON(musicDetails);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                music = new Music(artist, title, album, genre);
+
+                if (!areFeaturedArtistsInMusicTitle(music)) {
+                    addFeaturedArtistsToMusicTitle(musicDetails, music);
+                }
+
+                String fileExtension = ".mp3";
+                if (musicFileInfo.getMusicFile().getPath().contains(".")) {
+                    fileExtension = musicFileInfo.getMusicFile().getPath().substring(musicFileInfo.getMusicFile().getPath().lastIndexOf("."));
+                }
+                String newMusicFileName = music.getArtist() + " - " + music.getTitle() + fileExtension;
+                newFilePath += "\\" + newMusicFileName;
+                musicFileInfo.setNewMusicFilePath(newFilePath);
+
+                try {
+                    Files.copy(musicFileInfo.getMusicFile().toPath(), new File(newFilePath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                if (fileExtension == ".mp3") {
+                    setMP3MusicTag(musicFileInfo, music);
+                } else {
+                    setOtherMusicFormatTag(musicFileInfo, music);
+                }
+
+                resultDisplay.appendText(musicFileInfo.getMusicFile().getPath() + "\n -> " + newFilePath);
+                resultDisplay.appendText("\n\n");
             } catch (JSONException e) {
                 e.printStackTrace();
+                appendUnableToRecogniseMessage(musicFileInfo, resultDisplay);
             }
-
-            try {
-                artist = musicDetails.getJSONArray("artists").getJSONObject(0).getString("name");
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                album = musicDetails.getJSONObject("album").getString("name");
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                genre = getGenreFromJSON(musicDetails);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            music = new Music(artist, title, album, genre);
-
-            if (!areFeaturedArtistsInMusicTitle(music)) {
-                music.setTitle(music.getTitle() + " ft. " + getFeaturedArtists(musicDetails));
-            }
-
-            String fileExtension = ".mp3";
-            if (musicFileInfo.getMusicFile().getPath().contains(".")) {
-                fileExtension = musicFileInfo.getMusicFile().getPath().substring(musicFileInfo.getMusicFile().getPath().lastIndexOf("."));
-            }
-            String newMusicFileName = music.getArtist() + " - " + music.getTitle() + fileExtension;
-            newFilePath += "\\" + newMusicFileName;
-            musicFileInfo.setNewMusicFilePath(newFilePath);
-
-            try {
-                Files.copy(musicFileInfo.getMusicFile().toPath(), new File(newFilePath).toPath(), StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            if (fileExtension == ".mp3") {
-                setMP3MusicTag(musicFileInfo, music);
-            } else {
-                setOtherMusicFormatTag(musicFileInfo, music);
-            }
-
-            resultDisplay.appendText(musicFileInfo.getMusicFile().getPath() + "\n -> " + newFilePath);
-            resultDisplay.appendText("\n\n");
-        }   //  end of if Http Error
+        }   //  end of if no Http Error
 
         else {
-            showAlert("Music Recognition Error", "Please ensure you have good internet connection during the recognition process");
-        }
+            showErrorAlert("Music Recognition Error", "Please ensure you have good internet connection during the recognition process");
+        }   //  end of else Http Error
     }   //  end of createRecognisedMusic()
+
+    private static void appendUnableToRecogniseMessage(MusicFileInformation musicFileInfo, TextArea resultDisplay) {
+        resultDisplay.appendText("Unable to recognise \"" + musicFileInfo.getMusicFile().getName() + "\"");
+        resultDisplay.appendText("\n\n");
+    }   //  end of appendUnableToRecogniseMessage()
 
     private static String getGenreFromJSON(JSONObject musicDetails) {
         String genre = "";
@@ -155,17 +175,17 @@ public class MusicRecogniserController {
         }
 
         return genre;
-    }
+    }   //  end of getGenreFromJSON()
 
     private static boolean areFeaturedArtistsInMusicTitle(Music music) {
-        if (music.getTitle().contains(" ft") || music.getTitle().contains(" feat")) {
+        if (music.getTitle().contains("ft") || music.getTitle().contains("feat")) {
             return true;
         }
 
         return false;
     }   //  areFeaturedArtistsInMusicTitle()
 
-    private static String getFeaturedArtists(JSONObject musicDetails) {
+    private static void addFeaturedArtistsToMusicTitle(JSONObject musicDetails, Music music) {
         String featuredArtists = "";
         JSONArray artistJSONArray = musicDetails.getJSONArray("artists");
 
@@ -177,13 +197,21 @@ public class MusicRecogniserController {
             featuredArtists += artistJSONArray.getJSONObject(i).getString("name");
         }   //  end of for
 
-        return featuredArtists;
+        if (!featuredArtists.isEmpty()) {
+            music.setTitle(music.getTitle() + " ft " + featuredArtists);
+        }
     }   //  end of addFeaturedArtistsToMusicTitle()
 
     private static void setMP3MusicTag(MusicFileInformation musicFileInfo, Music music) {
         try {
             MP3File audioFile = new MP3File(musicFileInfo.getNewMusicFilePath());
             AbstractID3v2Tag audioTag = audioFile.getID3v2Tag();
+            audioTag.deleteField(FieldKey.ARTIST);
+            audioTag.deleteField(FieldKey.TITLE);
+            audioTag.deleteField(FieldKey.ALBUM);;
+            audioTag.deleteField(FieldKey.ALBUM_ARTIST);
+            audioTag.deleteField(FieldKey.GENRE);;
+
             audioTag.setField(FieldKey.ARTIST, music.getArtist());
             audioTag.setField(FieldKey.TITLE, music.getTitle());
             audioTag.setField(FieldKey.ALBUM, music.getAlbum());;
@@ -203,12 +231,18 @@ public class MusicRecogniserController {
         } catch (CannotWriteException e) {
             e.printStackTrace();
         }
-    }
+    }   //  end of setMP3MusicTag()
 
     private static void setOtherMusicFormatTag(MusicFileInformation musicFileInfo, Music music) {
         try {
             AudioFile audioFile = AudioFileIO.read(musicFileInfo.getMusicFile());
             Tag audioTag = audioFile.getTagOrCreateDefault();
+            audioTag.deleteField(FieldKey.ARTIST);
+            audioTag.deleteField(FieldKey.TITLE);
+            audioTag.deleteField(FieldKey.ALBUM);;
+            audioTag.deleteField(FieldKey.ALBUM_ARTIST);
+            audioTag.deleteField(FieldKey.GENRE);
+
             audioTag.setField(FieldKey.ARTIST, music.getArtist());
             audioTag.setField(FieldKey.TITLE, music.getTitle());
             audioTag.setField(FieldKey.ALBUM, music.getAlbum());;
@@ -228,15 +262,15 @@ public class MusicRecogniserController {
         } catch (CannotWriteException e) {
             e.printStackTrace();
         }
-    }
+    }   //  setOtherMusicFormatTag()
 
-    public static void showAlert(String title, String contentText) {
+    public static void showErrorAlert(String title, String contentText) {
         Alert errorAlert = new Alert(Alert.AlertType.ERROR);
         errorAlert.setTitle(title);
         errorAlert.setHeaderText("");
         errorAlert.setContentText(contentText);
         errorAlert.showAndWait();
-    }   //  end of showAlert()
+    }   //  end of showErrorAlert()
 
     public static void reset(ArrayList<MusicFileInformation> musicFilesInformation, TextArea filesNameDisplay, TextArea resultDisplay) {
         musicFilesInformation.clear();

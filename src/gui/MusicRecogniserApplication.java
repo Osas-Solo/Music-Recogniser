@@ -44,6 +44,7 @@ public class MusicRecogniserApplication extends Application {
         window = new Stage();
         windowContent = new BorderPane();
         scene = new Scene(windowContent, 480, 320);
+        scene.getStylesheets().add("gui/style.css");
         window.setScene(scene);
         window.setTitle("Music Recogniser");
         window.setMaximized(true);
@@ -52,6 +53,7 @@ public class MusicRecogniserApplication extends Application {
         //  initialise centre content
         centreContent = new VBox();
         centreContent.setAlignment(Pos.CENTER);
+        centreContent.setSpacing(20);
         instructionLabel = new Label("Select files to recognise:");
         filesNamesDisplay = new TextArea();
         filesNamesDisplay.setPromptText("files to rename");
