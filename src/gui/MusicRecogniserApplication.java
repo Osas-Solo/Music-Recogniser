@@ -4,7 +4,6 @@ import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -24,7 +23,7 @@ public class MusicRecogniserApplication extends Application {
     Label instructionLabel;
     TextArea filesNamesDisplay;
     Button browseButton;
-    Button renameButton;
+    Button recogniseButton;
     Button resetButton;
 
     //  declare bottom content
@@ -59,9 +58,9 @@ public class MusicRecogniserApplication extends Application {
         filesNamesDisplay.setPromptText("files to rename");
         filesNamesDisplay.setEditable(false);
         browseButton = new Button("Browse");
-        renameButton = new Button("Rename Files");
+        recogniseButton = new Button("Recognise Files");
         resetButton = new Button("Reset");
-        centreContent.getChildren().addAll(instructionLabel, filesNamesDisplay, browseButton, renameButton, resetButton);
+        centreContent.getChildren().addAll(instructionLabel, filesNamesDisplay, browseButton, recogniseButton, resetButton);
         windowContent.setCenter(centreContent);
 
         //  initialise bottom content
@@ -73,17 +72,11 @@ public class MusicRecogniserApplication extends Application {
         musicFilesInformation = new ArrayList<>();
 
         //  set actions
-        browseButton.setOnAction(e -> {
-            musicFilesInformation.addAll(MusicRecogniserController.selectMusicFiles(window, filesNamesDisplay));
-        });
+        browseButton.setOnAction(e -> musicFilesInformation.addAll(MusicRecogniserController.selectMusicFiles(window, filesNamesDisplay)));
 
-        renameButton.setOnAction(e -> {
-            MusicRecogniserController.renameMusicFiles(musicFilesInformation, window, resultDisplay);
-        });
+        recogniseButton.setOnAction(e -> MusicRecogniserController.renameMusicFiles(musicFilesInformation, window, resultDisplay));
 
-        resetButton.setOnAction(e -> {
-            MusicRecogniserController.reset(musicFilesInformation, filesNamesDisplay, resultDisplay);
-        });
+        resetButton.setOnAction(e -> MusicRecogniserController.reset(musicFilesInformation, filesNamesDisplay, resultDisplay));
 
     }   //  end of start
 

@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: gui.MusicRecogniserApplication
+Class-Path: ACR_Cloud.jar JAudioTagger.jar json.jar lib lib.so
+

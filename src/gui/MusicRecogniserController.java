@@ -43,7 +43,7 @@ public class MusicRecogniserController {
         File directory = directorySelector.showDialog(window);
         String newFilePath = directory.getPath();
 
-        Map<String, Object> configuration = new HashMap<String, Object>();
+        Map<String, Object> configuration = new HashMap<>();
         setupConfiguration(configuration);
 
         ACRCloudRecognizer audioRecogniser = new ACRCloudRecognizer(configuration);
@@ -83,7 +83,7 @@ public class MusicRecogniserController {
 
         if (!recognisedMusicJson.contains("Http Error")) {
             JSONObject musicJsonObject = new JSONObject(recognisedMusicJson);
-            JSONObject musicDetails = null;
+            JSONObject musicDetails;
             try {
                 musicDetails = musicJsonObject.getJSONObject("metadata").getJSONArray("music").getJSONObject(0);
                 Music music;
@@ -137,7 +137,7 @@ public class MusicRecogniserController {
                     e.printStackTrace();
                 }
 
-                if (fileExtension == ".mp3") {
+                if (fileExtension.equals(".mp3")) {
                     setMP3MusicTag(musicFileInfo, music);
                 } else {
                     setOtherMusicFormatTag(musicFileInfo, music);

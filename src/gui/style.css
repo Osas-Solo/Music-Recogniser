@@ -23,8 +23,16 @@
 }
 
 .text-area {
-    -fx-background-color: #161616;
     -fx-text-fill: #ffa200;
+    -fx-border-width: 0px;
+    -fx-border-style: none;
+}
+
+.text-area .content {
+    -fx-background-color: #161616;
+    -fx-border-width: 3px;
+    -fx-border-style: solid;
+    -fx-border-color: #ffa200;
     -fx-border-radius: 20px;
     -fx-padding: 20px;
 }
