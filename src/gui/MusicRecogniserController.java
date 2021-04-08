@@ -77,7 +77,7 @@ public class MusicRecogniserController {
 
     private static void createRecognisedMusic(ACRCloudRecognizer audioRecogniser, MusicFileInformation musicFileInfo,
                                               String newFilePath, TextArea resultDisplay) {
-        String recognisedMusicJson = audioRecogniser.recognizeByFile(musicFileInfo.getMusicFile().getPath(), 10);
+        String recognisedMusicJson = audioRecogniser.recognizeByFile(musicFileInfo.getMusicFile().getPath(), 30);
 
         System.out.println(recognisedMusicJson);
 
@@ -95,6 +95,7 @@ public class MusicRecogniserController {
 
                 try {
                     title = musicDetails.getString("title");
+                    title = replaceIllegalCharacters(title);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -164,25 +165,27 @@ public class MusicRecogniserController {
     private static String getGenreFromJSON(JSONObject musicDetails) {
         String genre = "";
 
-        JSONArray genreJSONArray = musicDetails.getJSONArray("genres");
+        JSONArray genreJSONArray;
 
-        for (int i = 0; i < genreJSONArray.length(); i++) {
-            if (!genre.isEmpty()) {
-                genre += ", ";
+        try {
+            genreJSONArray = musicDetails.getJSONArray("genres");
+
+            for (int i = 0; i < genreJSONArray.length(); i++) {
+                if (!genre.isEmpty()) {
+                    genre += ", ";
+                }
+
+                genre += genreJSONArray.getJSONObject(i).getString("name");
             }
-
-            genre += genreJSONArray.getJSONObject(i).getString("name");
+        } catch (JSONException e) {
+            return genre;
         }
 
         return genre;
     }   //  end of getGenreFromJSON()
 
     private static boolean areFeaturedArtistsInMusicTitle(Music music) {
-        if (music.getTitle().contains("ft") || music.getTitle().contains("feat")) {
-            return true;
-        }
-
-        return false;
+        return music.getTitle().contains("ft") || music.getTitle().contains("feat");
     }   //  areFeaturedArtistsInMusicTitle()
 
     private static void addFeaturedArtistsToMusicTitle(JSONObject musicDetails, Music music) {
@@ -202,33 +205,33 @@ public class MusicRecogniserController {
         }
     }   //  end of addFeaturedArtistsToMusicTitle()
 
+    private static String replaceIllegalCharacters(String musicTitle) {
+        return musicTitle.replaceAll("[\\\\/:*?\"<>|]", "");
+    }
+
     private static void setMP3MusicTag(MusicFileInformation musicFileInfo, Music music) {
         try {
             MP3File audioFile = new MP3File(musicFileInfo.getNewMusicFilePath());
             AbstractID3v2Tag audioTag = audioFile.getID3v2Tag();
-            audioTag.deleteField(FieldKey.ARTIST);
-            audioTag.deleteField(FieldKey.TITLE);
-            audioTag.deleteField(FieldKey.ALBUM);;
-            audioTag.deleteField(FieldKey.ALBUM_ARTIST);
-            audioTag.deleteField(FieldKey.GENRE);;
+
+            if (audioTag != null) {
+                audioTag.deleteField(FieldKey.ARTIST);
+                audioTag.deleteField(FieldKey.TITLE);
+                audioTag.deleteField(FieldKey.ALBUM);
+                audioTag.deleteField(FieldKey.ALBUM_ARTIST);
+                audioTag.deleteField(FieldKey.GENRE);
+            } else {
+                audioTag = (AbstractID3v2Tag) audioFile.createDefaultTag();
+            }
 
             audioTag.setField(FieldKey.ARTIST, music.getArtist());
             audioTag.setField(FieldKey.TITLE, music.getTitle());
-            audioTag.setField(FieldKey.ALBUM, music.getAlbum());;
+            audioTag.setField(FieldKey.ALBUM, music.getAlbum());
             audioTag.setField(FieldKey.ALBUM_ARTIST, music.getArtist());
-            audioTag.setField(FieldKey.GENRE, music.getGenre());;
+            audioTag.setField(FieldKey.GENRE, music.getGenre());
             audioFile.commit();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CannotReadException e) {
-            e.printStackTrace();
-        } catch (ReadOnlyFileException e) {
-            e.printStackTrace();
-        } catch (TagException e) {
-            e.printStackTrace();
-        } catch (InvalidAudioFrameException e) {
-            e.printStackTrace();
-        } catch (CannotWriteException e) {
+        } catch (IOException | CannotWriteException | InvalidAudioFrameException |
+                    TagException | ReadOnlyFileException | CannotReadException e) {
             e.printStackTrace();
         }
     }   //  end of setMP3MusicTag()
@@ -239,27 +242,18 @@ public class MusicRecogniserController {
             Tag audioTag = audioFile.getTagOrCreateDefault();
             audioTag.deleteField(FieldKey.ARTIST);
             audioTag.deleteField(FieldKey.TITLE);
-            audioTag.deleteField(FieldKey.ALBUM);;
+            audioTag.deleteField(FieldKey.ALBUM);
             audioTag.deleteField(FieldKey.ALBUM_ARTIST);
             audioTag.deleteField(FieldKey.GENRE);
 
             audioTag.setField(FieldKey.ARTIST, music.getArtist());
             audioTag.setField(FieldKey.TITLE, music.getTitle());
-            audioTag.setField(FieldKey.ALBUM, music.getAlbum());;
+            audioTag.setField(FieldKey.ALBUM, music.getAlbum());
             audioTag.setField(FieldKey.ALBUM_ARTIST, music.getArtist());
-            audioTag.setField(FieldKey.GENRE, music.getGenre());;
+            audioTag.setField(FieldKey.GENRE, music.getGenre());
             audioFile.commit();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CannotReadException e) {
-            e.printStackTrace();
-        } catch (ReadOnlyFileException e) {
-            e.printStackTrace();
-        } catch (TagException e) {
-            e.printStackTrace();
-        } catch (InvalidAudioFrameException e) {
-            e.printStackTrace();
-        } catch (CannotWriteException e) {
+        } catch (IOException | CannotWriteException | InvalidAudioFrameException |
+                    TagException | ReadOnlyFileException | CannotReadException e) {
             e.printStackTrace();
         }
     }   //  setOtherMusicFormatTag()

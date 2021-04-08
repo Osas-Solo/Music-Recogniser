@@ -1,4 +1,5 @@
 Manifest-Version: 1.0
 Main-Class: gui.MusicRecogniserApplication
-Class-Path: ACR_Cloud.jar JAudioTagger.jar json.jar lib lib.so
+Class-Path: json-20201115.jar commons-codec-1.10.jar ACR_Cloud.jar jaudi
+ otagger-2.2.6-SNAPSHOT.jar acrcloud_extr_tool.dll
 
